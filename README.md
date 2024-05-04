@@ -228,6 +228,7 @@ The schematic of this configuration is below.
    ```
 
    ```bash
+   # Home Server
    $ ping 10.7.0.1
    PING 10.7.0.1 (10.7.0.1) 56(84) bytes of data.
    64 bytes from 10.7.0.1: icmp_seq=1 ttl=64 time=19.6 ms
