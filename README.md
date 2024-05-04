@@ -45,7 +45,7 @@ The schematic of this configuration is below.
    The interface to note is `eth0`.
 5. Write to `/etc/wireguard/server-gateway.conf`
 
-   ```
+   ```ini
    [Interface]
    PrivateKey = # Get from /etc/wireguard/private.key
    Address = 10.7.0.1/24 # Choose Your Own Address
@@ -119,7 +119,7 @@ The schematic of this configuration is below.
 1. Run step 1 - 3 from Cloud VPS section
 2. Write to `/etc/wireguard/gateway-connect.conf`
 
-   ```
+   ```ini
    [Interface]
    PrivateKey = # Get from /etc/wireguard/private.key
    Address = 10.7.0.2/24
@@ -142,7 +142,7 @@ The schematic of this configuration is below.
 
 1. Add peer details and port forwarding to `server-gateway.conf` from Cloud VPS
 
-   ```
+   ```ini
    [Interface]
    PrivateKey = # Get from /etc/wireguard/private.key
    Address = 10.7.0.1/24 # Choose Your Own Address
@@ -168,7 +168,7 @@ The schematic of this configuration is below.
 
    Take a look to this port forwarding section.
 
-   ```json
+   ```ini
    # Port Forwarding To Public IP (Example, Nginx from 10.7.0.2:80 to port 2000)
    PreUp = iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 2000 -j DNAT --to-destination 10.7.0.2:80
    PostDown = iptables -t nat -D PREROUTING -i eth0 -p tcp --dport 2000 -j DNAT --to-destination 10.7.0.2:80
