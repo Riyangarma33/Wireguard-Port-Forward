@@ -260,6 +260,75 @@ The schematic of this configuration is below.
    $ sudo systemctl enable --now wg-quick@<interface-name>.service
    ```
 
+## Security Measures
+
+The config that shown above is vulnerable for Cloud VPS. In the Home Server, you can access such as ssh to Cloud VPS through `10.7.0.1:22`. To counter such vulnerability, you need to add some rules to the Cloud VPS's `server-gateway.conf`.
+
+* Option 1: Block All
+  In this case, Home Server cannot access the Cloud VPS completely.
+
+  ```ini
+  [Interface]
+  PrivateKey = UIz8afLlQwS39jXulYl9zlPyGuk64r0n5f7T3GRDnVk=
+  Address = 10.7.0.1/24
+  ListenPort = 51820
+  SaveConfig = false
+
+  # Packet Forwarding
+  PreUp = sysctl -w net.ipv4.ip_forward=1
+
+  # Masquerade to Internet Interface (Check Interface Name First)
+  PreUp = iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+  PostDown = iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+  # Port Forwarding To Public IP
+  PreUp = iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 2000 -j DNAT --to-destination 10.7.0.2:80
+  PostDown = iptables -t nat -D PREROUTING -i eth0 -p tcp --dport 2000 -j DNAT --to-destination 10.7.0.2:80
+
+  # Logging Block Rule
+  # TCP
+  PreUp = iptables -A INPUT -p tcp -m iprange --src-range 10.7.0.2-10.7.0.10 -j LOG --log-prefix "WG Gateway Blocked TCP: " --log-level 4
+  PostDown = iptables -D INPUT -p tcp -m iprange --src-range 10.7.0.2-10.7.0.10 -j LOG --log-prefix "WG Gateway Blocked TCP: " --log-level 4
+  # UDP
+  PreUp = iptables -A INPUT -p udp -m iprange --src-range 10.7.0.2-10.7.0.10 -j LOG --log-prefix "WG Gateway Blocked UDP: " --log-level 4
+  PostDown = iptables -D INPUT -p udp -m iprange --src-range 10.7.0.2-10.7.0.10 -j LOG --log-prefix "WG Gateway Blocked UDP: " --log-level 4
+  # ICMP
+  PreUp = iptables -A INPUT -p icmp -m iprange --src-range 10.7.0.2-10.7.0.10 -j LOG --log-prefix "WG Gateway Blocked ICMP: " --log-level 4
+  PostDown = iptables -D INPUT -p icmp -m iprange --src-range 10.7.0.2-10.7.0.10 -j LOG --log-prefix "WG Gateway Blocked ICMP: " --log-level 4
+
+  # Block All TCP, UDP, and ICMP from range 10.7.0.2 to 10.7.0.10
+  # TCP
+  PreUp = iptables -A INPUT -p tcp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  PostDown = iptables -D INPUT -p tcp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  # UDP
+  PreUp = iptables -A INPUT -p udp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  PostDown = iptables -D INPUT -p udp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  # ICMP
+  PreUp = iptables -A INPUT -p icmp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  PostDown = iptables -D INPUT -p icmp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+
+
+  # Remote settings for the peer
+  [Peer]
+  PublicKey = lJUBnCcOafozfpVNS0V5fEHfs+KJVbLxgljbdR6/YDc=
+  AllowedIPs = 10.7.0.2/32
+  ```
+
+  The key rule to block all access is below.
+
+  ```ini
+  # Block All TCP, UDP, and ICMP from range 10.7.0.2 to 10.7.0.10
+  # TCP
+  PreUp = iptables -A INPUT -p tcp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  PostDown = iptables -D INPUT -p tcp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  # UDP
+  PreUp = iptables -A INPUT -p udp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  PostDown = iptables -D INPUT -p udp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  # ICMP
+  PreUp = iptables -A INPUT -p icmp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  PostDown = iptables -D INPUT -p icmp -m iprange --src-range 10.7.0.2-10.7.0.10 -j DROP
+  ```
+
 ## Conclusions
 
 With this method, you can publish service from Home Server to public with help of the Cloud VPS and WireGuard. Please note, in order for this to work the Cloud VPS ufw firewall needs to be inactive by default.
